@@ -88,7 +88,12 @@ fn build_slider_box() -> gtk::Box {
         .justify(Justification::Center)
         .build();
 
-    let scale = Scale::builder().hexpand(true).build();
+    let scale = Scale::builder()
+        .hexpand(true)
+        .round_digits(0)
+        .show_fill_level(true)
+        .build();
+    scale.set_range(0.0, 300.0);
 
     res.append(&bpm_label);
     res.append(&scale);

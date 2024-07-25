@@ -7,15 +7,13 @@ use audio::play_metronome;
 use gtk::prelude::*;
 use gtk::{
     glib, Application, ApplicationWindow, CssProvider, Justification, Label,
-    Orientation,
+    Orientation, Scale,
 };
 
 mod audio;
-mod components;
 mod config;
 mod consts;
 
-// use components::*;
 use config::*;
 use consts::*;
 
@@ -62,16 +60,32 @@ fn build_ui(app: &Application) {
         .margin_start(10)
         .margin_end(10)
         .width_request(600)
-        .orientation(Orientation::Horizontal)
+        .orientation(Orientation::Vertical)
         .build();
 
-    let title = Label::builder()
-        .label("Metronome")
-        .name("title-text")
+    // let title_txt = Label::builder()
+    //     .label("Metronome")
+    //     .name("title-text")
+    //     .hexpand(true)
+    //     .justify(Justification::Center)
+    //     .build();
+
+    let slider_box = gtk::Box::builder()
+        .orientation(Orientation::Vertical)
+        .build();
+    let bpm_label = Label::builder()
+        .label("XXX BPM")
+        .name("bpm-label")
         .hexpand(true)
         .justify(Justification::Center)
         .build();
-    main_box.append(&title);
+    let slider = Scale::builder().hexpand(true).build();
+
+    slider_box.append(&bpm_label);
+    slider_box.append(&slider);
+
+    // main_box.append(&title_txt);
+    main_box.append(&slider_box);
 
     // Present window
     window.set_child(Some(&main_box));

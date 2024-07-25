@@ -1,8 +1,8 @@
+use std::fs;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
-use std::{fs, thread};
 
+use audio::Metronome;
 use gtk::glib::Propagation;
 use gtk::prelude::*;
 use gtk::{
@@ -17,7 +17,7 @@ mod consts;
 use config::*;
 use consts::*;
 
-static mut PLAYING: AtomicBool = AtomicBool::new(false);
+static METRONOME: RwLock<Metronome> = RwLock::new(Metronome::new());
 static CONFIG: RwLock<Option<Config>> = RwLock::new(None);
 
 fn main() -> glib::ExitCode {
@@ -76,9 +76,6 @@ fn build_ui(app: &Application) {
         CONFIG.read().unwrap().as_ref().unwrap().save();
         Propagation::Proceed
     });
-
-    let player = thread::spawn(|| audio::start_metronome());
-    player.join().unwrap();
 }
 
 fn build_slider_box() -> gtk::Box {
@@ -106,8 +103,10 @@ fn build_slider_box() -> gtk::Box {
     res.append(&scale);
 
     scale.connect_value_changed(move |scale| {
-        CONFIG.write().unwrap().as_mut().unwrap().bpm = scale.value();
-        bpm_label.set_text(format!("{} BPM", scale.value()).as_str());
+        let value = scale.value();
+        CONFIG.write().unwrap().as_mut().unwrap().bpm = value;
+        METRONOME.write().unwrap().bpm = value;
+        bpm_label.set_text(&format!("{} BPM", value));
     });
 
     res

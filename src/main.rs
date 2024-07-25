@@ -4,11 +4,10 @@ use std::sync::{mpsc, RwLock};
 use std::{fs, thread};
 
 use audio::Metronome;
-use gtk::glib::property::PropertyGet;
 use gtk::glib::Propagation;
 use gtk::prelude::*;
 use gtk::{
-    glib, Application, ApplicationWindow, CssProvider, Justification, Label,
+    Application, ApplicationWindow, CssProvider, Justification, Label,
     Orientation, Scale,
 };
 
@@ -22,7 +21,7 @@ use consts::*;
 static METRONOME: RwLock<Metronome> = RwLock::new(Metronome::new());
 static CONFIG: RwLock<Option<Config>> = RwLock::new(None);
 
-fn main() -> glib::ExitCode {
+fn main() {
     // make the user data folder
     let data_dir = user_data_dir();
     if !data_dir.exists() && fs::create_dir_all(&data_dir).is_err() {
@@ -31,11 +30,9 @@ fn main() -> glib::ExitCode {
     let config = Config::load_or_create();
     CONFIG.write().unwrap().replace(config);
 
-    // start the app
-    let app = Application::builder().application_id(APP_ID).build();
-    app.connect_activate(build_ui);
-    app.connect_startup(|_| load_css());
-    app.run()
+    let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+    thread::spawn(|| METRONOME.write().unwrap().start(rx));
+    thread::spawn(|| make_app(tx)).join().unwrap();
 }
 
 fn load_css() {
@@ -49,7 +46,14 @@ fn load_css() {
     );
 }
 
-fn build_ui(app: &Application) {
+fn make_app(tx: Sender<bool>) {
+    let app = Application::builder().application_id(APP_ID).build();
+    app.connect_activate(move |app| build_ui(app, tx.clone()));
+    app.connect_startup(|_| load_css());
+    app.run();
+}
+
+fn build_ui(app: &Application, tx: Sender<bool>) {
     // Create a window
     let window = ApplicationWindow::builder()
         .application(app)
@@ -66,24 +70,22 @@ fn build_ui(app: &Application) {
         .orientation(Orientation::Vertical)
         .build();
 
-    let slider_box = build_slider_box();
+    let slider_box = build_slider_box(tx);
 
     main_box.append(&slider_box);
 
     // Present window
     window.set_child(Some(&main_box));
-    window.present();
 
     window.connect_close_request(|_| {
         CONFIG.read().unwrap().as_ref().unwrap().save();
         Propagation::Proceed
     });
 
-    let (_tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-    METRONOME.write().unwrap().start(rx);
+    window.present();
 }
 
-fn build_slider_box() -> gtk::Box {
+fn build_slider_box(_stop_button_tx: Sender<bool>) -> gtk::Box {
     let res = gtk::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
@@ -102,7 +104,7 @@ fn build_slider_box() -> gtk::Box {
         .build();
     scale.set_range(0.0, MAX_BPM);
     let last_bpm = CONFIG.read().unwrap().as_ref().unwrap().bpm;
-    scale.set_value(dbg!(last_bpm));
+    scale.set_value(last_bpm);
 
     res.append(&bpm_label);
     res.append(&scale);

@@ -6,32 +6,25 @@ use std::time::Duration;
 
 pub struct Metronome {
     pub bpm: f64,
-    pub playing: bool,
 }
 
 impl Metronome {
     pub const fn new() -> Self {
-        Self {
-            bpm: DEFAULT_BPM,
-            playing: false,
-        }
+        Self { bpm: DEFAULT_BPM }
     }
 
     pub fn start(&mut self, on_off: Receiver<bool>) {
-        self.playing = true;
+        loop {
+            let audio = include_bytes!("sounds/fl-metronome-hat.wav");
+            let audio = BufReader::new(Cursor::new(audio));
+            thread::spawn(|| Self::play_hit(audio));
 
-        let audio = include_bytes!("sounds/fl-metronome-hat.wav");
-        let audio = BufReader::new(Cursor::new(audio));
-        thread::spawn(|| Self::play_hit(audio));
+            thread::sleep(Duration::from_millis(60000 / (self.bpm as u64)));
 
-        thread::sleep(Duration::from_millis(60000 / (self.bpm as u64)));
-
-        if let Ok(new_state) = on_off.try_recv() {
-            self.playing = new_state;
-        }
-
-        if self.playing {
-            self.start(on_off);
+            // if the channel receives a `false`, stop the metronome
+            if let Ok(false) = on_off.try_recv() {
+                return;
+            }
         }
     }
 

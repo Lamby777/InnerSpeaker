@@ -18,14 +18,14 @@ pub struct Config {
     pub bpm: f64,
 
     /// Number of notes per measure
-    pub measure: u8,
+    pub measure_len: u8,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             bpm: DEFAULT_BPM,
-            measure: 1,
+            measure_len: 1,
         }
     }
 }

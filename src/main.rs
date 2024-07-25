@@ -28,6 +28,7 @@ fn main() -> glib::ExitCode {
         eprintln!("warning: could not create data directory.");
     }
     let config = Config::load_or_create();
+    *METRONOME.write().unwrap() = Metronome::from_config(&config);
     CONFIG.write().unwrap().replace(config);
 
     let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
@@ -87,7 +88,7 @@ fn build_ui(app: &Application, tx: Sender<bool>) {
 
 fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
     let last_bpm = CONFIG.read().unwrap().as_ref().unwrap().bpm;
-    let last_measure = CONFIG.read().unwrap().as_ref().unwrap().measure;
+    let last_measure = CONFIG.read().unwrap().as_ref().unwrap().measure_len;
 
     let res = gtk::Box::builder()
         .orientation(Orientation::Vertical)
@@ -148,7 +149,7 @@ fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
     measure_scale.connect_value_changed(move |scale| {
         let new_measure = scale.value() as u8;
 
-        CONFIG.write().unwrap().as_mut().unwrap().measure = new_measure;
+        CONFIG.write().unwrap().as_mut().unwrap().measure_len = new_measure;
         METRONOME.write().unwrap().measure_len = new_measure;
         measure_label.set_text(&fmt_measure(new_measure));
     });

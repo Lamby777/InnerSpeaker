@@ -19,28 +19,46 @@ impl Metronome {
         }
     }
 
+    pub fn from_config(config: &Config) -> Self {
+        Self {
+            bpm: config.bpm,
+            measure_len: config.measure_len,
+            nth_beat: 0,
+        }
+    }
+
     pub fn start(metronome: &RwLock<Metronome>, rx: Receiver<bool>) {
         loop {
             // if the channel receives a `false`, block until it receives a `true`
             if let Ok(false) = rx.try_recv() {
                 loop {
                     if let Ok(true) = rx.recv() {
+                        metronome.write().unwrap().nth_beat = 0;
                         break;
                     }
                 }
             }
 
-            let metronome = metronome.read().unwrap();
-            metronome.hit(false);
+            let bpm = {
+                let mut metronome = metronome.write().unwrap();
+                metronome.hit();
 
-            let bpm = metronome.bpm;
-            drop(metronome);
+                metronome.nth_beat += 1;
+                if metronome.nth_beat >= metronome.measure_len {
+                    metronome.nth_beat = 0;
+                }
+
+                metronome.bpm
+            };
 
             thread::sleep(Duration::from_millis(60000 / (bpm as u64)));
         }
     }
 
-    pub fn hit(&self, first: bool) {
+    pub fn hit(&self) {
+        // don't play a high pitched sound if it's every single beat
+        let first = self.nth_beat == 0 && self.measure_len > 1;
+
         let audio = include_bytes!("sounds/fl-metronome-hat.wav");
         let audio = BufReader::new(Cursor::new(audio));
         thread::spawn(move || Self::play_sound(audio, first));
@@ -53,6 +71,10 @@ impl Metronome {
         // _stream must live as long as the sink
         let (_stream, stream_handle) = OutputStream::try_default().unwrap();
         let sink = Sink::try_new(&stream_handle).unwrap();
+
+        if first {
+            sink.set_speed(FIRST_BEAT_SPEED);
+        }
 
         let source = Decoder::new(audio).unwrap();
         sink.append(source);

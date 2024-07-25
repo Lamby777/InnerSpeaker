@@ -14,7 +14,7 @@ pub fn config_file_path() -> PathBuf {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub bpm: u32,
+    pub bpm: f64,
 }
 
 impl Config {

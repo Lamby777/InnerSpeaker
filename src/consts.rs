@@ -1,2 +1,3 @@
 pub const APP_ID: &str = "org.sparklet.innerspeaker";
-pub const DEFAULT_BPM: u32 = 120;
+pub const DEFAULT_BPM: f64 = 120.0;
+pub const MAX_BPM: f64 = 240.0;

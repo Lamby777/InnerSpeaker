@@ -8,4 +8,4 @@ pub const DEFAULT_MEASURE_LEN: u8 = 4;
 pub const MIN_MEASURE: u8 = 1;
 pub const MAX_MEASURE: u8 = 8;
 
-pub const FIRST_BEAT_SPEED: f32 = 1.5;
+pub const FIRST_BEAT_SPEED: f32 = 0.95;

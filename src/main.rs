@@ -1,6 +1,7 @@
-use std::fs;
+use std::io::{BufReader, Cursor};
 use std::path::PathBuf;
 use std::sync::RwLock;
+use std::{fs, thread};
 
 use audio::play_metronome;
 use gtk::prelude::*;
@@ -50,7 +51,7 @@ fn build_ui(app: &Application) {
     // Create a window
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("Select an emoji.")
+        .title("Metronome")
         .width_request(400)
         .build();
 
@@ -74,5 +75,8 @@ fn build_ui(app: &Application) {
     window.set_child(Some(&main_box));
     window.present();
 
-    play_metronome();
+    let audio = include_bytes!("sounds/fl-metronome-hat.wav");
+    let audio = BufReader::new(Cursor::new(audio));
+    let player = thread::spawn(|| play_metronome(audio));
+    player.join().unwrap();
 }

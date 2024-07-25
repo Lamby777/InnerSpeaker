@@ -6,11 +6,17 @@ use std::time::Duration;
 
 pub struct Metronome {
     pub bpm: f64,
+    pub measure_len: u8,
+    pub nth_beat: u8,
 }
 
 impl Metronome {
     pub const fn new() -> Self {
-        Self { bpm: DEFAULT_BPM }
+        Self {
+            bpm: DEFAULT_BPM,
+            measure_len: DEFAULT_MEASURE_LEN,
+            nth_beat: 0,
+        }
     }
 
     pub fn start(metronome: &RwLock<Metronome>, rx: Receiver<bool>) {
@@ -25,7 +31,7 @@ impl Metronome {
             }
 
             let metronome = metronome.read().unwrap();
-            metronome.hit();
+            metronome.hit(false);
 
             let bpm = metronome.bpm;
             drop(metronome);
@@ -34,13 +40,13 @@ impl Metronome {
         }
     }
 
-    pub fn hit(&self) {
+    pub fn hit(&self, first: bool) {
         let audio = include_bytes!("sounds/fl-metronome-hat.wav");
         let audio = BufReader::new(Cursor::new(audio));
-        thread::spawn(|| Self::play_sound(audio));
+        thread::spawn(move || Self::play_sound(audio, first));
     }
 
-    fn play_sound<R>(audio: R)
+    fn play_sound<R>(audio: R, first: bool)
     where
         R: Read + Seek + Send + Sync + 'static,
     {

@@ -14,7 +14,20 @@ pub fn config_file_path() -> PathBuf {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
+    /// Beats per minute
     pub bpm: f64,
+
+    /// Number of notes per measure
+    pub measure: u8,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            bpm: DEFAULT_BPM,
+            measure: 1,
+        }
+    }
 }
 
 impl Config {
@@ -46,11 +59,5 @@ impl Config {
     pub fn save(&self) {
         let config_file = serde_json::to_string(self).unwrap();
         fs::write(config_file_path(), config_file).unwrap();
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self { bpm: DEFAULT_BPM }
     }
 }

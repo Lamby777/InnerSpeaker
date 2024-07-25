@@ -87,6 +87,7 @@ fn build_ui(app: &Application, tx: Sender<bool>) {
 
 fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
     let last_bpm = CONFIG.read().unwrap().as_ref().unwrap().bpm;
+    let last_measure = CONFIG.read().unwrap().as_ref().unwrap().measure;
 
     let res = gtk::Box::builder()
         .orientation(Orientation::Vertical)
@@ -99,13 +100,28 @@ fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
         .justify(Justification::Center)
         .build();
 
-    let scale = Scale::builder()
+    let bpm_scale = Scale::builder()
         .hexpand(true)
         .round_digits(0)
         .show_fill_level(true)
         .build();
-    scale.set_range(MIN_BPM, MAX_BPM);
-    scale.set_value(last_bpm);
+    bpm_scale.set_range(MIN_BPM, MAX_BPM);
+    bpm_scale.set_value(last_bpm);
+
+    let measure_label = Label::builder()
+        .label(&fmt_measure(last_measure))
+        .name("measure-label")
+        .hexpand(true)
+        .justify(Justification::Center)
+        .build();
+
+    let measure_scale = Scale::builder()
+        .hexpand(true)
+        .round_digits(0)
+        .show_fill_level(true)
+        .build();
+    measure_scale.set_range(MIN_MEASURE as f64, MAX_MEASURE as f64);
+    measure_scale.set_value(last_measure as f64);
 
     let start_btn = gtk::Button::builder().label("Start").hexpand(true).build();
     start_btn.connect_clicked(move |btn| {
@@ -116,17 +132,33 @@ fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
     });
 
     res.append(&bpm_label);
-    res.append(&scale);
+    res.append(&bpm_scale);
+    res.append(&measure_scale);
+    res.append(&measure_label);
     res.append(&start_btn);
 
-    scale.connect_value_changed(move |scale| {
+    bpm_scale.connect_value_changed(move |scale| {
         let new_bpm = scale.value();
+
         CONFIG.write().unwrap().as_mut().unwrap().bpm = new_bpm;
         METRONOME.write().unwrap().bpm = new_bpm;
         bpm_label.set_text(&fmt_bpm(new_bpm));
     });
 
+    measure_scale.connect_value_changed(move |scale| {
+        let new_measure = scale.value() as u8;
+
+        CONFIG.write().unwrap().as_mut().unwrap().measure = new_measure;
+        METRONOME.write().unwrap().measure_len = new_measure;
+        measure_label.set_text(&fmt_measure(new_measure));
+    });
+
     res
+}
+
+fn fmt_measure(measure: u8) -> String {
+    let s = if measure == 1 { "" } else { "s" };
+    format!("{} beat{s} per measure", measure)
 }
 
 fn fmt_bpm(bpm: f64) -> String {

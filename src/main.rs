@@ -4,7 +4,7 @@ use std::sync::{mpsc, RwLock};
 use std::{fs, thread};
 
 use audio::Metronome;
-use gtk::glib::Propagation;
+use gtk::glib::{self, Propagation};
 use gtk::prelude::*;
 use gtk::{
     Application, ApplicationWindow, CssProvider, Justification, Label,
@@ -21,7 +21,7 @@ use consts::*;
 static METRONOME: RwLock<Metronome> = RwLock::new(Metronome::new());
 static CONFIG: RwLock<Option<Config>> = RwLock::new(None);
 
-fn main() {
+fn main() -> glib::ExitCode {
     // make the user data folder
     let data_dir = user_data_dir();
     if !data_dir.exists() && fs::create_dir_all(&data_dir).is_err() {
@@ -31,8 +31,12 @@ fn main() {
     CONFIG.write().unwrap().replace(config);
 
     let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
-    thread::spawn(|| METRONOME.write().unwrap().start(rx));
-    thread::spawn(|| make_app(tx)).join().unwrap();
+    thread::spawn(|| Metronome::start(&METRONOME, rx));
+
+    let app = Application::builder().application_id(APP_ID).build();
+    app.connect_activate(move |app| build_ui(app, tx.clone()));
+    app.connect_startup(|_| load_css());
+    app.run()
 }
 
 fn load_css() {
@@ -44,13 +48,6 @@ fn load_css() {
         &css,
         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
-}
-
-fn make_app(tx: Sender<bool>) {
-    let app = Application::builder().application_id(APP_ID).build();
-    app.connect_activate(move |app| build_ui(app, tx.clone()));
-    app.connect_startup(|_| load_css());
-    app.run();
 }
 
 fn build_ui(app: &Application, tx: Sender<bool>) {

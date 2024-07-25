@@ -13,22 +13,30 @@ impl Metronome {
         Self { bpm: DEFAULT_BPM }
     }
 
-    pub fn start(&mut self, on_off: Receiver<bool>) {
+    pub fn start(metronome: &'static RwLock<Metronome>, rx: Receiver<bool>) {
         loop {
-            let audio = include_bytes!("sounds/fl-metronome-hat.wav");
-            let audio = BufReader::new(Cursor::new(audio));
-            thread::spawn(|| Self::play_hit(audio));
+            let metronome = metronome.read().unwrap();
+            metronome.hit();
 
-            thread::sleep(Duration::from_millis(60000 / (self.bpm as u64)));
+            let bpm = metronome.bpm;
+            drop(metronome);
+
+            thread::sleep(Duration::from_millis(60000 / (bpm as u64)));
 
             // if the channel receives a `false`, stop the metronome
-            if let Ok(false) = on_off.try_recv() {
+            if let Ok(false) = rx.try_recv() {
                 return;
             }
         }
     }
 
-    fn play_hit<R>(audio: R)
+    pub fn hit(&self) {
+        let audio = include_bytes!("sounds/fl-metronome-hat.wav");
+        let audio = BufReader::new(Cursor::new(audio));
+        thread::spawn(|| Self::play_sound(audio));
+    }
+
+    fn play_sound<R>(audio: R)
     where
         R: Read + Seek + Send + Sync + 'static,
     {

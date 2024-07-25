@@ -1,7 +1,14 @@
 use rodio::{Decoder, OutputStream, Sink};
-use std::io::{Read, Seek};
+use std::io::{BufReader, Cursor, Read, Seek};
 
-pub fn play_metronome<R>(audio: R)
+/// Will continue playing until `PLAYING` is set to false from another thread.
+pub fn start_metronome() {
+    let audio = include_bytes!("sounds/fl-metronome-hat.wav");
+    let audio = BufReader::new(Cursor::new(audio));
+    play_hit(audio)
+}
+
+fn play_hit<R>(audio: R)
 where
     R: Read + Seek + Send + Sync + 'static,
 {

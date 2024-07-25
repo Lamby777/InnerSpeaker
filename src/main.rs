@@ -1,5 +1,5 @@
-use std::io::{BufReader, Cursor};
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use std::sync::RwLock;
 use std::{fs, thread};
 
@@ -17,6 +17,7 @@ mod consts;
 use config::*;
 use consts::*;
 
+static mut PLAYING: AtomicBool = AtomicBool::new(false);
 static CONFIG: RwLock<Option<Config>> = RwLock::new(None);
 
 fn main() -> glib::ExitCode {
@@ -76,9 +77,7 @@ fn build_ui(app: &Application) {
         Propagation::Proceed
     });
 
-    let audio = include_bytes!("sounds/fl-metronome-hat.wav");
-    let audio = BufReader::new(Cursor::new(audio));
-    let player = thread::spawn(|| audio::play_metronome(audio));
+    let player = thread::spawn(|| audio::start_metronome());
     player.join().unwrap();
 }
 

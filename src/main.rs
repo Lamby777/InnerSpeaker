@@ -2,11 +2,13 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::RwLock;
 
+use audio::play_metronome;
 use gtk::prelude::*;
 use gtk::{
     glib, Application, ApplicationWindow, CssProvider, Orientation, Stack,
 };
 
+mod audio;
 mod components;
 mod config;
 mod consts;
@@ -45,6 +47,13 @@ fn load_css() {
 }
 
 fn build_ui(app: &Application) {
+    // Create a window
+    let window = ApplicationWindow::builder()
+        .application(app)
+        .title("Select an emoji.")
+        .width_request(400)
+        .build();
+
     let main_box = gtk::Box::builder()
         .spacing(10)
         .margin_top(10)
@@ -61,14 +70,9 @@ fn build_ui(app: &Application) {
 
     main_box.append(&stack);
 
-    // Create a window
-    let window = ApplicationWindow::builder()
-        .application(app)
-        .title("Select an emoji.")
-        .child(&main_box)
-        .width_request(400)
-        .build();
-
     // Present window
+    window.set_child(Some(&main_box));
     window.present();
+
+    play_metronome();
 }

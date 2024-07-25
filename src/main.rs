@@ -6,7 +6,8 @@ use std::{fs, thread};
 use audio::play_metronome;
 use gtk::prelude::*;
 use gtk::{
-    glib, Application, ApplicationWindow, CssProvider, Orientation, Stack,
+    glib, Application, ApplicationWindow, CssProvider, Justification, Label,
+    Orientation,
 };
 
 mod audio;
@@ -52,7 +53,6 @@ fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder()
         .application(app)
         .title("Metronome")
-        .width_request(400)
         .build();
 
     let main_box = gtk::Box::builder()
@@ -61,15 +61,17 @@ fn build_ui(app: &Application) {
         .margin_bottom(10)
         .margin_start(10)
         .margin_end(10)
+        .width_request(600)
         .orientation(Orientation::Horizontal)
         .build();
 
-    let stack = Stack::builder()
-        .height_request(400)
-        .vhomogeneous(false)
+    let title = Label::builder()
+        .label("Metronome")
+        .name("title-text")
+        .hexpand(true)
+        .justify(Justification::Center)
         .build();
-
-    main_box.append(&stack);
+    main_box.append(&title);
 
     // Present window
     window.set_child(Some(&main_box));

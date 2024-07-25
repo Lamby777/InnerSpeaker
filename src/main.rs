@@ -3,7 +3,6 @@ use std::sync::mpsc::{Receiver, Sender};
 use std::sync::{mpsc, RwLock};
 use std::{fs, thread};
 
-use audio::Metronome;
 use gtk::glib::{self, Propagation};
 use gtk::prelude::*;
 use gtk::{
@@ -15,6 +14,7 @@ mod audio;
 mod config;
 mod consts;
 
+use audio::Metronome;
 use config::*;
 use consts::*;
 
@@ -83,12 +83,14 @@ fn build_ui(app: &Application, tx: Sender<bool>) {
 }
 
 fn build_slider_box(_stop_button_tx: Sender<bool>) -> gtk::Box {
+    let last_bpm = CONFIG.read().unwrap().as_ref().unwrap().bpm;
+
     let res = gtk::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
 
     let bpm_label = Label::builder()
-        .label("XXX BPM")
+        .label(&fmt_bpm(last_bpm))
         .name("bpm-label")
         .hexpand(true)
         .justify(Justification::Center)
@@ -99,19 +101,22 @@ fn build_slider_box(_stop_button_tx: Sender<bool>) -> gtk::Box {
         .round_digits(0)
         .show_fill_level(true)
         .build();
-    scale.set_range(0.0, MAX_BPM);
-    let last_bpm = CONFIG.read().unwrap().as_ref().unwrap().bpm;
+    scale.set_range(MIN_BPM, MAX_BPM);
     scale.set_value(last_bpm);
 
     res.append(&bpm_label);
     res.append(&scale);
 
     scale.connect_value_changed(move |scale| {
-        let value = scale.value();
-        CONFIG.write().unwrap().as_mut().unwrap().bpm = value;
-        METRONOME.write().unwrap().bpm = value;
-        bpm_label.set_text(&format!("{} BPM", value));
+        let new_bpm = scale.value();
+        CONFIG.write().unwrap().as_mut().unwrap().bpm = new_bpm;
+        METRONOME.write().unwrap().bpm = new_bpm;
+        bpm_label.set_text(&fmt_bpm(new_bpm));
     });
 
     res
+}
+
+fn fmt_bpm(bpm: f64) -> String {
+    format!("{} BPM", bpm)
 }

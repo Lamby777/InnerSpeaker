@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::sync::RwLock;
 use std::{fs, thread};
 
-use audio::play_metronome;
 use gtk::prelude::*;
 use gtk::{
     glib, Application, ApplicationWindow, CssProvider, Justification, Label,
@@ -71,10 +70,10 @@ fn build_ui(app: &Application) {
     window.set_child(Some(&main_box));
     window.present();
 
-    // let audio = include_bytes!("sounds/fl-metronome-hat.wav");
-    // let audio = BufReader::new(Cursor::new(audio));
-    // let player = thread::spawn(|| play_metronome(audio));
-    // player.join().unwrap();
+    let audio = include_bytes!("sounds/fl-metronome-hat.wav");
+    let audio = BufReader::new(Cursor::new(audio));
+    let player = thread::spawn(|| audio::play_metronome(audio));
+    player.join().unwrap();
 }
 
 fn build_slider_box() -> gtk::Box {
@@ -88,9 +87,16 @@ fn build_slider_box() -> gtk::Box {
         .hexpand(true)
         .justify(Justification::Center)
         .build();
-    let slider = Scale::builder().hexpand(true).build();
+
+    let scale = Scale::builder().hexpand(true).build();
 
     res.append(&bpm_label);
-    res.append(&slider);
+    res.append(&scale);
+
+    scale.connect_value_changed(move |scale| {
+        CONFIG.write().unwrap().as_mut().unwrap().bpm = scale.value() as u32;
+        bpm_label.set_text(format!("{} BPM", scale.value()).as_str());
+    });
+
     res
 }

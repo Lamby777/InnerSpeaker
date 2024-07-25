@@ -13,7 +13,9 @@ pub fn config_file_path() -> PathBuf {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Config {}
+pub struct Config {
+    pub bpm: u32,
+}
 
 impl Config {
     pub fn load_or_create() -> Self {
@@ -30,7 +32,15 @@ impl Config {
 
     pub fn load(path: &Path) -> Self {
         let config_file = fs::read_to_string(path).unwrap();
-        serde_json::from_str(&config_file).unwrap()
+        match serde_json::from_str(&config_file) {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("Error reading config file, creating new one.");
+                let new = Self::default();
+                new.save();
+                new
+            }
+        }
     }
 
     pub fn save(&self) {
@@ -41,6 +51,6 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Self {}
+        Self { bpm: DEFAULT_BPM }
     }
 }

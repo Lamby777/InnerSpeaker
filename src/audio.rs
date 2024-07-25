@@ -2,6 +2,7 @@ use super::*;
 
 use rodio::{Decoder, OutputStream, Sink};
 use std::io::{BufReader, Cursor, Read, Seek};
+use std::time::Duration;
 
 pub struct Metronome {
     pub bpm: f64,
@@ -16,12 +17,22 @@ impl Metronome {
         }
     }
 
-    pub fn start(&mut self) {
+    pub fn start(&mut self, on_off: Receiver<bool>) {
         self.playing = true;
 
         let audio = include_bytes!("sounds/fl-metronome-hat.wav");
         let audio = BufReader::new(Cursor::new(audio));
-        Self::play_hit(audio)
+        thread::spawn(|| Self::play_hit(audio));
+
+        thread::sleep(Duration::from_millis(60000 / (self.bpm as u64)));
+
+        if let Ok(new_state) = on_off.try_recv() {
+            self.playing = new_state;
+        }
+
+        if self.playing {
+            self.start(on_off);
+        }
     }
 
     fn play_hit<R>(audio: R)

@@ -1,8 +1,10 @@
-use std::fs;
 use std::path::PathBuf;
-use std::sync::RwLock;
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{mpsc, RwLock};
+use std::{fs, thread};
 
 use audio::Metronome;
+use gtk::glib::property::PropertyGet;
 use gtk::glib::Propagation;
 use gtk::prelude::*;
 use gtk::{
@@ -76,6 +78,9 @@ fn build_ui(app: &Application) {
         CONFIG.read().unwrap().as_ref().unwrap().save();
         Propagation::Proceed
     });
+
+    let (_tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+    METRONOME.write().unwrap().start(rx);
 }
 
 fn build_slider_box() -> gtk::Box {

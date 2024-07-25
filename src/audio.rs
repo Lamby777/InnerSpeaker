@@ -15,6 +15,15 @@ impl Metronome {
 
     pub fn start(metronome: &RwLock<Metronome>, rx: Receiver<bool>) {
         loop {
+            // if the channel receives a `false`, block until it receives a `true`
+            if let Ok(false) = rx.try_recv() {
+                loop {
+                    if let Ok(true) = rx.recv() {
+                        break;
+                    }
+                }
+            }
+
             let metronome = metronome.read().unwrap();
             metronome.hit();
 
@@ -22,15 +31,6 @@ impl Metronome {
             drop(metronome);
 
             thread::sleep(Duration::from_millis(60000 / (bpm as u64)));
-
-            // if the channel receives a `false`, block until it receives a `true`
-            if let Ok(false) = rx.try_recv() {
-                loop {
-                    if rx.recv().unwrap() {
-                        break;
-                    }
-                }
-            }
         }
     }
 

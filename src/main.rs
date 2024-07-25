@@ -31,6 +31,9 @@ fn main() -> glib::ExitCode {
     CONFIG.write().unwrap().replace(config);
 
     let (tx, rx): (Sender<bool>, Receiver<bool>) = mpsc::channel();
+
+    // start in the "off" state
+    tx.send(false).unwrap();
     thread::spawn(|| Metronome::start(&METRONOME, rx));
 
     let app = Application::builder().application_id(APP_ID).build();
@@ -82,7 +85,7 @@ fn build_ui(app: &Application, tx: Sender<bool>) {
     window.present();
 }
 
-fn build_slider_box(_stop_button_tx: Sender<bool>) -> gtk::Box {
+fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
     let last_bpm = CONFIG.read().unwrap().as_ref().unwrap().bpm;
 
     let res = gtk::Box::builder()
@@ -104,8 +107,11 @@ fn build_slider_box(_stop_button_tx: Sender<bool>) -> gtk::Box {
     scale.set_range(MIN_BPM, MAX_BPM);
     scale.set_value(last_bpm);
 
+    let start_btn = gtk::Button::builder().label("Start").hexpand(true).build();
+
     res.append(&bpm_label);
     res.append(&scale);
+    res.append(&start_btn);
 
     scale.connect_value_changed(move |scale| {
         let new_bpm = scale.value();

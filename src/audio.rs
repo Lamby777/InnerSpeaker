@@ -13,7 +13,7 @@ impl Metronome {
         Self { bpm: DEFAULT_BPM }
     }
 
-    pub fn start(metronome: &'static RwLock<Metronome>, rx: Receiver<bool>) {
+    pub fn start(metronome: &RwLock<Metronome>, rx: Receiver<bool>) {
         loop {
             let metronome = metronome.read().unwrap();
             metronome.hit();

@@ -23,9 +23,13 @@ impl Metronome {
 
             thread::sleep(Duration::from_millis(60000 / (bpm as u64)));
 
-            // if the channel receives a `false`, stop the metronome
+            // if the channel receives a `false`, block until it receives a `true`
             if let Ok(false) = rx.try_recv() {
-                return;
+                loop {
+                    if rx.recv().unwrap() {
+                        break;
+                    }
+                }
             }
         }
     }

@@ -63,16 +63,25 @@ fn build_ui(app: &Application) {
         .orientation(Orientation::Vertical)
         .build();
 
-    // let title_txt = Label::builder()
-    //     .label("Metronome")
-    //     .name("title-text")
-    //     .hexpand(true)
-    //     .justify(Justification::Center)
-    //     .build();
+    let slider_box = build_slider_box();
 
-    let slider_box = gtk::Box::builder()
+    main_box.append(&slider_box);
+
+    // Present window
+    window.set_child(Some(&main_box));
+    window.present();
+
+    // let audio = include_bytes!("sounds/fl-metronome-hat.wav");
+    // let audio = BufReader::new(Cursor::new(audio));
+    // let player = thread::spawn(|| play_metronome(audio));
+    // player.join().unwrap();
+}
+
+fn build_slider_box() -> gtk::Box {
+    let res = gtk::Box::builder()
         .orientation(Orientation::Vertical)
         .build();
+
     let bpm_label = Label::builder()
         .label("XXX BPM")
         .name("bpm-label")
@@ -81,18 +90,7 @@ fn build_ui(app: &Application) {
         .build();
     let slider = Scale::builder().hexpand(true).build();
 
-    slider_box.append(&bpm_label);
-    slider_box.append(&slider);
-
-    // main_box.append(&title_txt);
-    main_box.append(&slider_box);
-
-    // Present window
-    window.set_child(Some(&main_box));
-    window.present();
-
-    let audio = include_bytes!("sounds/fl-metronome-hat.wav");
-    let audio = BufReader::new(Cursor::new(audio));
-    let player = thread::spawn(|| play_metronome(audio));
-    player.join().unwrap();
+    res.append(&bpm_label);
+    res.append(&slider);
+    res
 }

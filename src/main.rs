@@ -108,6 +108,12 @@ fn build_slider_box(stop_button_tx: Sender<bool>) -> gtk::Box {
     scale.set_value(last_bpm);
 
     let start_btn = gtk::Button::builder().label("Start").hexpand(true).build();
+    start_btn.connect_clicked(move |btn| {
+        let is_on = btn.label() == Some("Start".into());
+        let new_label = if is_on { "Stop" } else { "Start" };
+        btn.set_label(new_label);
+        stop_button_tx.send(is_on).unwrap();
+    });
 
     res.append(&bpm_label);
     res.append(&scale);

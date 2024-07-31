@@ -51,7 +51,7 @@ impl Metronome {
                 metronome.bpm
             };
 
-            thread::sleep(Duration::from_millis(60000 / (bpm as u64)));
+            thread::sleep(bpm_to_duration(bpm));
         }
     }
 
@@ -81,4 +81,8 @@ impl Metronome {
 
         sink.sleep_until_end();
     }
+}
+
+fn bpm_to_duration(bpm: f64) -> Duration {
+    Duration::from_millis(60000 / (bpm as u64))
 }
